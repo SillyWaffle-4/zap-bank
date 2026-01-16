@@ -7,6 +7,21 @@ const path = require('path');
 const User = require('./User'); // Ensure User.js is in the same folder
 
 dotenv.config();
+
+// Check for required environment variables
+if (!process.env.MONGO_URI) {
+    console.error("❌ ERROR: MONGO_URI not set in environment variables");
+    process.exit(1);
+}
+if (!process.env.JWT_SECRET) {
+    console.error("❌ ERROR: JWT_SECRET not set in environment variables");
+    process.exit(1);
+}
+if (!process.env.ADMIN_SECRET_KEY) {
+    console.error("❌ ERROR: ADMIN_SECRET_KEY not set in environment variables");
+    process.exit(1);
+}
+
 const app = express();
 app.use(express.json());
 
@@ -20,7 +35,7 @@ app.get('/', (req, res) => {
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ Zap Bank is OPEN on Mac!"))
+    .then(() => console.log("✅ Zap Bank is OPEN!"))
     .catch((err) => console.error("❌ DB Connection Error:", err));
 
 // --- ROUTES ---
@@ -37,9 +52,9 @@ app.post('/register', async (req, res) => {
         });
         
         await newUser.save();
-        res.status(201).send("Account created successfully!");
+        res.status(201).json({ message: "Account created successfully!" });
     } catch (err) {
-        res.status(500).send("Error: " + err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -47,34 +62,34 @@ app.post('/register', async (req, res) => {
 // Admin donate now uses admin JWT for protection
 const adminAuth = (req, res, next) => {
     const auth = req.headers.authorization;
-    if (!auth) return res.status(401).send('Missing admin token');
+    if (!auth) return res.status(401).json({ error: 'Missing admin token' });
     const token = auth.split(' ')[1];
     try {
-        const payload = jwt.verify(token, process.env.ADMIN_JWT_SECRET || process.env.ADMIN_SECRET_KEY);
-        if (!payload || !payload.admin) return res.status(403).send('Forbidden');
+        const payload = jwt.verify(token, process.env.ADMIN_SECRET_KEY);
+        if (!payload || !payload.admin) return res.status(403).json({ error: 'Forbidden' });
         next();
     } catch (err) {
-        return res.status(401).send('Invalid admin token');
+        return res.status(401).json({ error: 'Invalid admin token' });
     }
 };
 
 app.post('/admin/donate', adminAuth, async (req, res) => {
     const { username, amount } = req.body;
-    if (!username || typeof amount !== 'number') return res.status(400).send('username and numeric amount required');
+    if (!username || typeof amount !== 'number') return res.status(400).json({ error: 'username and numeric amount required' });
     try {
         const user = await User.donate(username, amount);
-        if (!user) return res.status(404).send('User not found.');
-        res.send(`Success! ${username} now has ${user.zaps} Zaps.`);
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+        res.json({ message: `Success! ${username} now has ${user.zaps} Zaps.`, zaps: user.zaps });
     } catch (err) {
-        res.status(500).send('Error adding Zaps: ' + err.message);
+        res.status(500).json({ error: 'Error adding Zaps: ' + err.message });
     }
 });
 
 // Admin login to obtain admin token (use your ADMIN_SECRET_KEY)
 app.post('/admin/login', (req, res) => {
     const { adminKey } = req.body;
-    if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) return res.status(403).send('Unauthorized');
-    const token = jwt.sign({ admin: true }, process.env.ADMIN_JWT_SECRET || process.env.ADMIN_SECRET_KEY, { expiresIn: '2h' });
+    if (!adminKey || adminKey !== process.env.ADMIN_SECRET_KEY) return res.status(403).json({ error: 'Unauthorized' });
+    const token = jwt.sign({ admin: true }, process.env.ADMIN_SECRET_KEY, { expiresIn: '2h' });
     res.json({ token });
 });
 
@@ -84,7 +99,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
         const users = await User.find({}).select('username zaps -_id').lean();
         res.json(users);
     } catch (err) {
-        res.status(500).send('Error fetching users: ' + err.message);
+        res.status(500).json({ error: 'Error fetching users: ' + err.message });
     }
 });
 
@@ -103,25 +118,25 @@ app.post('/login', async (req, res) => {
         }
 
         const ok = await bcrypt.compare(password, user.password);
-        if (!ok) return res.status(400).send('Invalid credentials');
+        if (!ok) return res.status(400).json({ error: 'Invalid credentials' });
         const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '8h' });
         res.json({ token, created: false });
     } catch (err) {
-        res.status(500).send('Login error: ' + err.message);
+        res.status(500).json({ error: 'Login error: ' + err.message });
     }
 });
 
 // User auth middleware
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).send('Missing token');
+    if (!authHeader) return res.status(401).json({ error: 'Missing token' });
     const token = authHeader.split(' ')[1];
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
         req.user = payload;
         next();
     } catch (err) {
-        res.status(401).send('Invalid token');
+        res.status(401).json({ error: 'Invalid token' });
     }
 };
 
@@ -129,10 +144,10 @@ const auth = (req, res, next) => {
 app.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('username zaps');
-        if (!user) return res.status(404).send('User not found');
+        if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (err) {
-        res.status(500).send('Error: ' + err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 
