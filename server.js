@@ -13,6 +13,11 @@ app.use(express.json());
 // Serve static admin/user pages
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve the user page at root so visiting / shows the app
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'user.html'));
+});
+
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ Zap Bank is OPEN on Mac!"))
