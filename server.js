@@ -34,9 +34,16 @@ app.get('/', (req, res) => {
 });
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+})
     .then(() => console.log("✅ Zap Bank is OPEN!"))
-    .catch((err) => console.error("❌ DB Connection Error:", err));
+    .catch((err) => {
+        console.error("❌ DB Connection Error:", err.message);
+        console.error("MONGO_URI:", process.env.MONGO_URI ? "SET" : "NOT SET");
+        process.exit(1);
+    });
 
 // --- ROUTES ---
 
@@ -107,7 +114,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        let user = await User.findOne({ username });
+        let user = await User.findOne({ username }).timeout(20000); // 20 second timeout
         // If user does not exist, create account automatically
         if (!user) {
             const hashedPassword = await bcrypt.hash(password, 10);
