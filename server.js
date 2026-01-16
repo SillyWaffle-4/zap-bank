@@ -114,7 +114,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        let user = await User.findOne({ username }).timeout(20000); // 20 second timeout
+        let user = await User.findOne({ username });
         // If user does not exist, create account automatically
         if (!user) {
             const hashedPassword = await bcrypt.hash(password, 10);
