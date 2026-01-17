@@ -23,8 +23,10 @@ button{cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accen
 .muted{color:var(--muted);font-size:13px}
 .section{margin-bottom:18px}
 .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:12px}
-.user-tile{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);transition:transform .12s,box-shadow .12s;}
+.user-tile{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);transition:transform .12s,box-shadow .12s;position:relative}
 .user-tile:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(2,6,12,0.6)}
+.delete-btn{position:absolute;top:8px;right:8px;width:24px;height:24px;background:#ff6b6b;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:bold;font-size:14px;transition:all .2s;opacity:0.7}
+.delete-btn:hover{opacity:1;transform:scale(1.1);background:#ff4444}
 .user-name{font-weight:700;color:#96cdf7}
 .zap-count{color:var(--accent);font-weight:700}
 .quick-row{display:flex;gap:8px;margin-top:10px}

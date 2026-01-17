@@ -61,7 +61,26 @@ async function loadUsers() {
     users.forEach(u => {
       const tile = document.createElement('div');
       tile.className = 'user-tile';
-      tile.innerHTML = `<div class="user-name">${u.username}</div><div class="muted">Zapz: <span class=\"zap-count\">${u.zaps}</span></div><div class=\"quick-row\"><input class=\"quick-amount\" type=\"number\" placeholder=\"amt\"><button class=\"quick-donate\">Donate</button></div>`;
+      tile.innerHTML = `<div class="delete-btn">✕</div><div class="user-name">${u.username}</div><div class="muted">Zapz: <span class=\"zap-count\">${u.zaps}</span></div><div class=\"quick-row\"><input class=\"quick-amount\" type=\"number\" placeholder=\"amt\"><button class=\"quick-donate\">Donate</button></div>`;
+      
+      // delete button handler
+      tile.querySelector('.delete-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete ${u.username} forever?`)) return;
+        try {
+          const res = await fetch('/admin/delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ username: u.username })
+          });
+          const data = await res.json();
+          alert(data.message || data.error || 'User deleted');
+          loadUsers();
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+      
       // donate handler
       tile.querySelector('.quick-donate').addEventListener('click', async (e) => {
         e.stopPropagation();

@@ -110,6 +110,19 @@ app.get('/admin/users', adminAuth, async (req, res) => {
     }
 });
 
+// Admin: delete a user
+app.post('/admin/delete-user', adminAuth, async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: 'username required' });
+    try {
+        const result = await User.deleteOne({ username });
+        if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found.' });
+        res.json({ message: `User ${username} deleted.` });
+    } catch (err) {
+        res.status(500).json({ error: 'Error deleting user: ' + err.message });
+    }
+});
+
 // User login to receive JWT
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
